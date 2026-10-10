@@ -8,7 +8,7 @@ import Grid from '@mui/material/Grid';
 import Snackbar from '@mui/material/Snackbar';
 import Typography from '@mui/material/Typography';
 import logo from '../../assets/logo.svg';
-
+import emailValidator from 'email-validator';
 
 export default function LoginForm() {
   const [showAlert, setShowAlert] = useState(false);
@@ -19,17 +19,32 @@ export default function LoginForm() {
     const password = data.get('password');
 
     // Add validation code here
-
+    if (!emailValidator.validate(email)) {
+      setShowAlert("Please enter a valid email address.");
+      return false;
+    }
+    if (password.length < 8) {
+      setShowAlert("Password must be at least 8 characters long.");
+      return false;
+    }
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/g.test(password)) {
+      setShowAlert("Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
+      return false;
+    }
+    return true;
   }
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (!validateForm(event)) {
+      return;
+    }
+
     const data = new FormData(event.currentTarget);
     console.log({
       email: data.get('email'),
       password: data.get('password'),
     });
-    validateForm(event);
     setShowAlert("Login Successful");
   };
 
