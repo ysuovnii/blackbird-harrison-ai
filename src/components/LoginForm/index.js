@@ -11,53 +11,63 @@ import logo from '../../assets/logo.svg';
 import emailValidator from 'email-validator';
 
 export default function LoginForm() {
-  const [showAlert, setShowAlert] = useState(false);
-  const validateForm = (event) => {
-    event.preventDefault()
-    const data = new FormData(event.currentTarget);
-    const email = data.get('email');
-    const password = data.get('password');
+  const [showAlert, setShowAlert] = useState('');
+  const [formErrors, setFormErrors] = useState({ email: '', password: '' });
 
-    // Add validation code here
-    if (!emailValidator.validate(email)) {
-      setShowAlert("Please enter a valid email address.");
-      return false;
+  const validateForm = (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const email = (data.get('email') || '').toString().trim();
+    const password = (data.get('password') || '').toString();
+    const nextErrors = { email: '', password: '' };
+
+    if (!email || !emailValidator.validate(email)) {
+      nextErrors.email = 'Please enter a valid email address.';
     }
-    if (password.length < 8) {
-      setShowAlert("Password must be at least 8 characters long.");
-      return false;
+
+    if (!password) {
+      nextErrors.password = 'Password is required.';
+    } else if (password.length < 8) {
+      nextErrors.password = 'Password must be at least 8 characters long.';
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/.test(password)) {
+      nextErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.';
     }
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/g.test(password)) {
-      setShowAlert("Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
-      return false;
-    }
-    return true;
-  }
+
+    setFormErrors(nextErrors);
+    const isValid = !nextErrors.email && !nextErrors.password;
+    setShowAlert(isValid ? 'Login Successful' : '');
+
+    return isValid;
+  };
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!validateForm(event)) {
-      return;
-    }
+    validateForm(event);
+  };
 
-    const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
-    setShowAlert("Login Successful");
+  const handleFieldChange = (event) => {
+    const { name, value } = event.target;
+    if (name === 'email' || name === 'password') {
+      setFormErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+    if (showAlert) {
+      setShowAlert('');
+    }
+    if (name === 'password' && value && value.length < 8 && value.length > 0) {
+      setFormErrors((prev) => ({ ...prev, password: 'Password must be at least 8 characters long.' }));
+    }
   };
 
   return (
     <>
       {showAlert &&
         <Snackbar
-          open={showAlert}
+          open={Boolean(showAlert)}
           autoHideDuration={6000}
-          onClose={() => setShowAlert(false)}
+          onClose={() => setShowAlert('')}
           message={showAlert}
         >
-          <Alert>{showAlert}</Alert>
+          <Alert severity="success">{showAlert}</Alert>
         </Snackbar>
       }
       <Grid
@@ -102,6 +112,9 @@ export default function LoginForm() {
               name="email"
               autoComplete="email"
               autoFocus
+              error={Boolean(formErrors.email)}
+              helperText={formErrors.email || ' '}
+              onChange={handleFieldChange}
             />
             <TextField
               margin="normal"
@@ -112,6 +125,9 @@ export default function LoginForm() {
               type="password"
               id="password"
               autoComplete="current-password"
+              error={Boolean(formErrors.password)}
+              helperText={formErrors.password || ' '}
+              onChange={handleFieldChange}
             />
             <Button
               type="submit"
